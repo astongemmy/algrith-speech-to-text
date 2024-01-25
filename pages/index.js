@@ -46,7 +46,7 @@ const Index = () => {
     reader.onloadend = () => {
       const base64Data = reader.result.split(',')[1];
 
-      fetch('https://speech.googleapis.com/v1/speech:recognize?key=AIzaSyBmt5on_i0iKnY5GOAunbG1JbdLQvy5CYQ', {
+      fetch('https://speech.googleapis.com/v1/speech:recognize?key=', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
