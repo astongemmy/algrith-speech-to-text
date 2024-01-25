@@ -1,0 +1,36 @@
+@tailwind base;
+
+/* Custom base CSS styles */
+html, body {
+    font-family: gilroy-font, sans-serif;
+    font-weight: normal;
+    color: #888888;
+    font-size: 13px;
+    padding: 0;
+    margin: 0;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+main {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0rem 0;
+    display: flex;
+    flex: 1;
+}
+
+/* Start purging */
+@tailwind components;
+/* Stop purging */
+
+html, body {
+    @apply bg-gray-50;
+}
+
+/* Start purging */
+@tailwind utilities;
+/* Stop purging */
