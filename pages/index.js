@@ -1,45 +1,59 @@
 'use client';
 
-// import encoderPathWasm from 'opus-recorder/dist/encoderWorker.min.wasm';
-// import encoderPath from 'opus-recorder/dist/encoderWorker.min.js';
-import RecordPlugin from 'wavesurfer.js/dist/plugins/record.esm';
+import { useState, useRef } from 'react';
 import tw, { styled } from 'twin.macro';
-import WaveSurfer from 'wavesurfer.js';
-// import Recorder from 'opus-recorder';
 import Head from 'next/head';
 
+import useWaveSurfer from '../hooks/useWaveSurfer';
 import Layout from '../components/Layout';
-import { useEffect, useRef, useState } from 'react';
+import { Timer } from '../utils/timer';
 
 const WaveSurferWrapper = styled.div`
-  #record-indicator {
-    transition: background-color 0.3s;
-    background-color: red;
-    display: inline-block;
-    border-radius: 50%;
-    margin-right: 5px;
-    height: 10px;
-    width: 10px;
-  }
-  
-  #record-downloader {
-    display: none;
+  ${tw`flex flex-col gap-4 p-8 w-2/5`};
+
+  .recorder {
+    ${tw`flex justify-between items-center gap-2 bg-green-200 p-4 rounded shadow`};
+
+    button {
+      &.record {
+        ${tw`bg-green-600 font-bold text-white shadow py-2 px-6 rounded border-none outline-none`};
+        ${({ recordingState }) => recordingState === 'paused' && tw`bg-yellow-500`};
+      }
+      
+      &.stop {
+        ${tw`bg-red-400 font-bold text-white shadow py-2 px-6 rounded border-none outline-none`};
+      }
+    }
+
+    .indicator {
+      ${tw`animate-pulse w-4 h-4 bg-red-400 shadow rounded-full`};
+    }
+
+    .timer {
+      ${tw`flex items-center font-bold bg-gray-200 rounded px-2 py-2`};
+    }
   }
 `;
 
 const Index = () => {
-  const [recordingState, setRecordingState] = useState('stopped');
   const [transcript, setTranscript] = useState();
-  const [wavesurfer, setWavesurfer] = useState();
-  const [timer, setTimer] = useState('00:00');
-  const [recorder, setRecorder] = useState();
   const waveformRef = useRef();
   
-  const [audioPlayerAttributes, setAudioPlayerAttributes] = useState({
-    controls: true,
-    src: '',
+  const {
+    recordFileExtension,
+    handleRecording,
+    recordingState,
+    stopRecording,
+    getRecorder,
+    recordTime,
+    recordBlob,
+    recordUrl,
+  } = useWaveSurfer({
+    waveformRef
   });
 
+  const timer = new Timer(recordTime).formatted();
+  
   const transcribeSpeech = (audioBlob) => {
     const reader = new FileReader();
 
@@ -78,128 +92,6 @@ const Index = () => {
     reader.readAsDataURL(audioBlob);
   };
 
-  const updateRecordTimer = (timer) => {
-    if (!timer) return setTimer('00:00');
-    
-    const timerArray = [
-      Math.floor((timer % 3600000) / 60000),
-      Math.floor((timer % 60000) / 1000)
-    ];
-    
-    setTimer(timerArray.map((v) => (v < 10 ? '0' + v : v)).join(':'));
-  };
-
-  useEffect(() => {
-    const initialiseWaveSurfer = () => {
-      if (wavesurfer) wavesurfer.destroy();
-
-      setWavesurfer(
-        WaveSurfer.create({
-          progressColor: 'rgb(100, 0, 100)',
-          container: waveformRef?.current,
-          waveColor: 'rgb(200, 0, 200)',
-          renderFunction: (channels, ctx) => {
-            const { width, height } = ctx.canvas;
-            const scale = channels[0].length / width;
-            const step = 10;
-    
-            ctx.translate(0, height / 2);
-            ctx.strokeStyle = ctx.fillStyle;
-            ctx.beginPath();
-    
-            for (let i = 0; i < width; i += step * 2) {
-              const index = Math.floor(i * scale);
-              const value = Math.abs(channels[0][index]);
-              let x = i;
-              let y = value * height;
-    
-              ctx.moveTo(x, 0);
-              ctx.lineTo(x, y);
-              ctx.arc(x + step / 2, y, step / 2, Math.PI, 0, true);
-              ctx.lineTo(x + step, 0);
-    
-              x = x + step;
-              y = -y;
-              ctx.moveTo(x, 0);
-              ctx.lineTo(x, y);
-              ctx.arc(x + step / 2, y, step / 2, Math.PI, 0, false);
-              ctx.lineTo(x + step, 0);
-            }
-    
-            ctx.stroke();
-            ctx.closePath();
-          },
-        })
-      );
-    };
-
-    initialiseWaveSurfer();
-  }, []);
-
-  useEffect(() => {
-    if (wavesurfer) {
-      setRecorder(
-        wavesurfer.registerPlugin(
-          RecordPlugin.create({
-            renderRecordedAudio: false,
-            scrollingWaveform: false
-          })
-        )
-      );
-    }
-  }, [wavesurfer]);
-
-  useEffect(() => {
-    if (recorder) {
-      recorder.on('record-progress', (time) => updateRecordTimer(time));
-        
-      recorder.on('record-end', (blob) => {
-        const recordedUrl = URL.createObjectURL(blob);
-        setAudioPlayerAttributes({
-          src: recordedUrl,
-          controls: true
-        });
-        setTimer('00:00');
-          
-        // Object.assign(recordDownloader, {
-          //   download: 'recording.' + blob.type.split(';')[0].split('/')[1] || 'webm',
-          //   href: recordedUrl
-        // });
-          
-        // Perform speech-to-text on the stored audio blob
-        // transcribeSpeech(blob);
-      });
-    }
-
-  }, [recorder]);
-
-  const handleRecording = () => {
-    if (!recorder) return;
-
-    if (recorder.isRecording()) {
-      recorder.pauseRecording();
-      return setRecordingState('paused');
-    }
-
-    if (recorder.isPaused()) {
-      recorder.resumeRecording();
-      return setRecordingState('recording');
-    }
-
-    recorder.startRecording().then(() => {
-      setRecordingState('recording');
-    });
-  };
-
-  const stopRecording = () => {
-    if (!recorder) return;
-    
-    if (recorder.isRecording() || recorder.isPaused()) {
-      recorder.stopRecording();
-      setRecordingState('stopped');
-    }
-  };
-  
   // const initializeOpusRecorder = () => {
   //   let opusRecorder = new Recorder({
   //     originalSampleRateOverride: 48000,
@@ -248,40 +140,49 @@ const Index = () => {
 	return (
     <Layout>
       <Head>
-        <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1" />
+        <meta
+          name='viewport'
+          content='width=device-width, minimum-scale=1, initial-scale=1'
+        />
         <title> Home | Algrith Speech to Text Transcriber </title>
-        {/* <script src="https://apis.google.com/js/platform.js"></script> */}
       </Head>
 
       <main>
-        <WaveSurferWrapper>
-          <div className="flex justify-between gap-4 bg-green-200 p-4 my-6 rounded shadow">
-            <button onClick={handleRecording} type="button" className="bg-green-600 shadow py-2 px-4 rounded border-none outline-none">
+        <WaveSurferWrapper recordingState={recordingState}>
+          <div className='recorder'>
+            <button onClick={handleRecording} type='button' className='record'>
               {recordingState === 'recording' && 'Pause'}
               {recordingState === 'paused' && 'Resume'}
               {recordingState === 'stopped' && 'Start'}
             </button>
-            
-            <button onClick={stopRecording} type="button" className="bg-red-400 shadow py-2 px-4 rounded border-none outline-none" disabled={!['recording', 'paused'].includes(recordingState)}>
+
+            <button
+              disabled={!['recording', 'paused'].includes(recordingState)}
+              onClick={stopRecording}
+              className='stop'
+              type='button'
+            >
               Stop
             </button>
-            
-            <div className="flex items-center bg-gray-200 ml-4 rounded px-2">
-              {timer}
-            </div>
+
+            <div className='indicator' />
+
+            <div className='timer'>{timer}</div>
           </div>
-          
-          {/* <div className={}></div> */}
-          
-          <div className="my-8" ref={waveformRef}></div>
-          
-          <audio {...audioPlayerAttributes}></audio>
-          
-          {/* <a href="" id="record-downloader">Download</a> */}
-          
-          {transcript && (
-            <div className="my-4">{ transcript }</div>
+
+          <div ref={waveformRef} />
+
+          {recordUrl && (
+            <>
+              <audio controls src={recordUrl}></audio>
+
+              <a href={recordUrl} download={`recording.${recordFileExtension}`}>
+                Download
+              </a>
+            </>
           )}
+
+          {transcript && <div>{transcript}</div>}
         </WaveSurferWrapper>
       </main>
     </Layout>
