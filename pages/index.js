@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef } from 'react';
 import tw, { styled } from 'twin.macro';
 import Head from 'next/head';

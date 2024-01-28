@@ -26,12 +26,15 @@ module.exports = function withTwin(nextConfig) {
               presets: [
                 [
                   '@babel/preset-react',
-                  { runtime: 'automatic', importSource: '@emotion/react' },
+                  {
+                    importSource: '@emotion/react',
+                    runtime: 'automatic'
+                  }
                 ],
               ],
               plugins: [
-                require.resolve('babel-plugin-macros'),
                 require.resolve('@emotion/babel-plugin'),
+                require.resolve('babel-plugin-macros')
               ],
             },
           },

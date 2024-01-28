@@ -31,5 +31,5 @@ yarn-error.log*
 .env.production.local
 
 # Next Config file
-next.config.js
+# next.config.js
 .vercel
