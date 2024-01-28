@@ -35,8 +35,13 @@ const WaveSurferWrapper = styled.div`
 `;
 
 const Index = () => {
-  const { transcript, transcribe } = useTranscriber();
   const waveformRef = useRef();
+  const {
+    couldNotTranscribe,
+    isTranscribing,
+    transcript,
+    transcribe
+  } = useTranscriber();
   
   const {
     recordFileExtension,
@@ -101,7 +106,21 @@ const Index = () => {
             </>
           )}
 
-          {transcript && <div>{transcript}</div>}
+          {isTranscribing && <div>Transcribing...Please wait!</div>}
+          
+          {couldNotTranscribe && (
+            <div>
+              Oops! Your audio input could not be transcribed!
+              Try again with a clearer/audible recording.
+            </div>
+          )}
+
+          {transcript && (
+            <div>
+              <h1>Transcript</h1>
+              {transcript}
+            </div>
+          )}
         </WaveSurferWrapper>
       </main>
     </Layout>
