@@ -56,7 +56,7 @@ const Index = () => {
   
   useEffect(() => {
     if (recordBlob) transcribe(recordBlob);
-  }, [transcript]);
+  }, [recordBlob]);
 
 	return (
     <Layout>

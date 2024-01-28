@@ -10,7 +10,7 @@ const useTranscriber = () => {
       const base64Data = reader.result.split(',')[1];
 
       fetch(
-        `https://speech.googleapis.com/v1/speech:recognize?key=${NEXT_PUBLIC_GOOGLE_API_KEY}`,
+        `https://speech.googleapis.com/v1/speech:recognize?key=${process.env.NEXT_PUBLIC_GOOGLE_API_KEY}`,
         {
           method: 'POST',
           headers: {
@@ -44,7 +44,7 @@ const useTranscriber = () => {
     reader.readAsDataURL(audioBlob);
   };
 
-  return { setTranscript, transcript, transcribe };
+  return { transcript, transcribe };
 };
 
 export default useTranscriber;
