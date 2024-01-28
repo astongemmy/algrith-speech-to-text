@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import tw, { styled } from 'twin.macro';
 import Head from 'next/head';
 
+import useTranscriber from '../hooks/useTranscriber';
 import useWaveSurfer from '../hooks/useWaveSurfer';
 import Layout from '../components/Layout';
 import { Timer } from '../utils/timer';
@@ -36,7 +37,7 @@ const WaveSurferWrapper = styled.div`
 `;
 
 const Index = () => {
-  const [transcript, setTranscript] = useState();
+  const { transcript, transcribe } = useTranscriber();
   const waveformRef = useRef();
   
   const {
@@ -44,98 +45,18 @@ const Index = () => {
     handleRecording,
     recordingState,
     stopRecording,
-    getRecorder,
     recordTime,
     recordBlob,
     recordUrl,
   } = useWaveSurfer({
     waveformRef
   });
-
+  
   const timer = new Timer(recordTime).formatted();
   
-  const transcribeSpeech = (audioBlob) => {
-    const reader = new FileReader();
-
-    reader.onloadend = () => {
-      const base64Data = reader.result.split(',')[1];
-
-      fetch('https://speech.googleapis.com/v1/speech:recognize?key=', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          config: {
-            encoding: 'WEBM_OPUS',
-            sampleRateHertz: 48000,
-            languageCode: 'en-US'
-          },
-          audio: {
-            content: base64Data
-          }
-        })
-      })
-      .then(response => response.json())
-      .then(data => {
-        const transcript = data.results
-          .map(result => result.alternatives[0].transcript)
-          .join('\n');
-
-        setTranscript(transcript);
-      })
-      .catch(error => {
-        console.error('Error performing speech-to-text:', error);
-      });
-    };
-
-    reader.readAsDataURL(audioBlob);
-  };
-
-  // const initializeOpusRecorder = () => {
-  //   let opusRecorder = new Recorder({
-  //     originalSampleRateOverride: 48000,
-  //     encoderPathWasm: encoderPathWasm,
-  //     encoderPath: encoderPath,
-  //     encoderSampleRate: 48000,
-  //     encoderApplication: 2049,
-  //     encoderFrameSize: 20,
-  //     streamPages: true,
-  //     birate: 128,
-  //   });
-  // };
-
-  // initializeOpusRecorder();
-  
-    // startRecordingButton.addEventListener('click', () => {
-    //     opusRecorder.start().then(() => {
-    //     startTimer();
-    //     // Change visual indicator color when recording starts
-    //     recordingIndicator.style.backgroundColor = 'red';
-    //     startRecordingButton.disabled = true;
-    //     stopRecordingButton.disabled = false;
-    //     });
-    // });
-  
-    // stopRecordingButton.addEventListener('click', () => {
-    //     opusRecorder.stop().then(() => {
-    //         // Reset visual indicator after recording stops
-    //         recordingIndicator.style.backgroundColor = 'transparent';
-    //         startRecordingButton.disabled = false;
-    //         stopRecordingButton.disabled = true;
-    //         stopTimer();
-    //     });
-    // });
-  
-    // opusRecorder.ondataavailable = (blob) => {
-    //     const bloby = new Blob([blob], {
-    //         type: 'audio/wav'
-    //     });
-  
-    //     const audioUrl = URL.createObjectURL(bloby);
-    //     audioPlayback.controls = true;
-    //     audioPlayback.src = audioUrl;
-    // };
+  useEffect(() => {
+    if (recordBlob) transcribe(recordBlob);
+  }, [transcript]);
 
 	return (
     <Layout>
